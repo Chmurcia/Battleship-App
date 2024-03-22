@@ -1,3 +1,7 @@
-export const sum = (a, b) => {
-    return a + b;
-}
+const Cells = document.querySelectorAll('.c-cell');
+
+Cells.forEach(cell => {
+    cell.addEventListener('click', () => {
+        
+    })
+})
