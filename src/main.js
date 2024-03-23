@@ -1,3 +1,6 @@
+import { Ship, ComputerShip} from './ships';
+import { state } from './ships';
+
 // Classes
 class Player {
     constructor() {
@@ -7,7 +10,7 @@ class Player {
     currentStatus() {
         console.log(this.amount)
         if (this.amount <= 0) {
-            alert('Player lost!');
+            alert('Computer won!');
         }
     }
 }
@@ -20,43 +23,7 @@ class Computer {
     currentStatus() {
         console.log(this.amount)
         if (this.amount <= 0) {
-            alert('Computer lost!');
-        }
-    }
-}
-
-class Ship {
-    constructor(length, element, side) {
-        this.length = length;
-        this.lives = length;
-        this.element = element;
-        this.placed = false;
-        this.side = side;
-    }
-
-    isSunk() {
-        if (this.lives <= 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    hit() {
-        if (isPlacedAll()) {
-            if(!this.isSunk()) {
-                this.lives -= 1;
-                console.log('Ship has been hit!');
-                if (this.lives === 0) {
-                    alert('Ship has been destroyed!');
-                    this.side.amount -= 1;
-                    this.side.currentStatus();
-                }
-            } else {
-                console.log('The ship is already down');
-            }
-        } else {
-            alert('Place first all the ships!');
+            alert('Player won!');
         }
     }
 }
@@ -64,10 +31,12 @@ class Ship {
 // Variables
 
 const player = new Player;
+const computer = new Computer;
 const boardSize = 10;
 
 // QuerySelectors
 const cells = document.querySelectorAll('.cell');
+const enemyCells = document.querySelectorAll('.c-cell');
 const twoShip = new Ship(2, document.querySelector('.two-ship'), player);
 const firstThreeShip = new Ship(3, document.querySelector('.three-one-ship'), player);
 const secondThreeShip = new Ship(3, document.querySelector('.three-two-ship'), player);
@@ -136,48 +105,46 @@ cells.forEach(cell => {
     })
 })
 
-//
 
-const gameBoard = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
 
-// Function to place a ship on the game board
+const ComputergameBoard = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+const PlayergameBoard = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+
 function placeShip(ship, cellX, cellY) {
     const shipLength = ship.length;
 
-    // Check if the ship can be placed in the specified position
     if (isValidPlacement(shipLength, cellX, cellY)) {
-        // Update the game board with the ship's position
         for (let i = 0; i < shipLength; i++) {
-            gameBoard[cellY][cellX + i] = ship;
+            PlayergameBoard[cellY][cellX + i] = ship;
         }
         ship.placed = true;
-        isPlacedAll();
-        console.log('Ship placed on the board:', ship);
-        // Update the CSS position of the ship element to match the dropped cell position
+        if (isPlacedAll()) {
+            state.gameStart = true;
+        }
+        console.log('Ship placed on the board:', cellY, cellX);
         const cellRect = event.target.getBoundingClientRect();
         ship.element.style.position = 'absolute';
         ship.element.style.left = cellRect.left + 'px';
         ship.element.style.top = cellRect.top + 'px';
     } else {
         console.log('Invalid ship placement');
+        console.log(cellX, ship.length);
     }
 }
 
-// Function to check if a ship can be placed in a specific position
 function isValidPlacement(shipLength, cellX, cellY) {
     if (cellX + shipLength > boardSize) {
         return false;
     }
 
     for (let i = 0; i < shipLength; i++) {
-        if (gameBoard[cellY][cellX + i] !== null) {
+        if (PlayergameBoard[cellY][cellX + i] !== null) {
             return false;
         }
     }
     return true;
 }
 
-// Event handler for dropping a ship onto the game board
 function drop(event) {
     event.preventDefault();
 
@@ -226,5 +193,78 @@ function isPlacedAll() {
         return true;
     } else {
         return false;
+    }
+}
+
+function computerAttack() {
+    let xCom = Math.floor(Math.random()*100)
+    cells[xCom].attacked = false;
+    if (cells[xCom].attacked === false) {
+        cells[xCom].style.backgroundColor = "rgba(255, 0, 0, 0.6)";
+        cells[xCom].attacked = true;
+    } else {
+        computerAttack()
+    }
+
+}
+
+function computerPlace(news, amount) {
+    let xCom = Math.floor(Math.random() * 100);
+        if (!enemyCells[xCom]) {
+        console.log("Incorrect index.");
+        return;
+    }
+    let compY = parseInt(enemyCells[xCom].dataset.y);
+    let compX = parseInt(enemyCells[xCom].dataset.x);
+    news = new ComputerShip(amount, computer);
+    if (isValidPlacement(news.length, compX, compY)) {
+        for (let i = 0; i < news.length; i++) {
+            ComputergameBoard[compY][compX + i] = news;
+            ComputergameBoard[compY][compX + i].has = news
+        }
+        news.placed = true;
+        enemyCells[xCom].placed = true;
+        if (isPlacedAll()) {
+            state.gameStart = true;
+        }
+        console.log('Ship placed on the board:', compY, compX);
+        console.log(enemyCells[xCom])
+        console.log(ComputergameBoard)
+    } else {
+        console.log('Invalid ship placement');
+        computerPlace(news, amount);
+    }
+
+}
+
+
+
+computerPlace('compTwoShip', 2)
+computerPlace('compFirstThreeShip', 3)
+computerPlace('compSecondThreeShip', 3)
+computerPlace('compFourShip', 4)
+computerPlace('compFiveShip', 5)
+
+ 
+function playerAttack() {
+    enemyCells.forEach(cell => {
+        cell.addEventListener('click', () => {
+            if (!cell.attacked) {
+                cell.attacked = true;
+                cell.style.backgroundColor = 'rgb(0, 0, 0, 0.5)'
+                if (ComputergameBoard[cell.dataset.y][cell.dataset.x]) {
+                    console.log(ComputergameBoard[cell.dataset.y][cell.dataset.x])
+                    ComputergameBoard[cell.dataset.y][cell.dataset.x].hit();
+                }
+            }
+        })
+    })
+}
+
+playerAttack();
+
+function mainGameLoop() {
+    if (state.gameStart) {
+        
     }
 }
